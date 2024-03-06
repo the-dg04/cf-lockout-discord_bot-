@@ -23,7 +23,11 @@ async def on_interval(clt):
     while True:
         try:
             if(((lockout.has_ended) or (time.time()-lockout.start_time>=lockout.lockout_length) or (lockout.max_points>=lockout.maximum_attainable_points))):
-                    await channel.send('\n'.join([f"{i['name']}\t{i['points']}\t{i['url']}\t{i['solved_by']}" for i in lockout.start_lockout()]))
+                    await channel.send("lockout ended")
+                    leaderboard=lockout.get_leaderboard()
+                    await channel.send('\n'.join([f"{i[0]}\t{i[1]}" for i in leaderboard]))
+                    if(leaderboard):
+                        await channel.send(f"Winner : {leaderboard[0][1]} with {leaderboard[0][0]} points!")
                     lockout.end_lockout()
                     break
         except:
@@ -40,7 +44,6 @@ async def on_interval(clt):
 @client.event
 async def on_ready():
     channel = client.get_channel(int(os.getenv("CHANNEL_ID")))
-    client.loop.create_task(on_interval(client))
     await channel.send('bot ready')
 
 @client.event
@@ -53,16 +56,24 @@ async def on_message(message):
         options=message.content.split(' ')
         if(options[0]=="!create"):
             lockout=Lockout(options[1],int(options[2]),int(options[3]),float(options[4]))
+            client.loop.create_task(on_interval(client))
             await message.channel.send("lockout created")
         elif(options[0]=="!start"):
             await message.channel.send('\n'.join([f"{i['name']}\t{i['points']}\t{i['url']}\t{i['solved_by']}" for i in lockout.start_lockout()]))
         elif(options[0]=="!list"):
-            await message.channel.send('\n'.join([f"{i['name']}\t{i['points']}\t{i['url']}\t{i['solved_by']}" for i in lockout.get_problems()]))
+            if(lockout.has_started):
+                await message.channel.send('\n'.join([f"{i['name']}\t{i['points']}\t{i['url']}\t{i['solved_by']}" for i in lockout.get_problems()]))
+            else:
+                await message.channel.send("lockout has not been started yet")
         elif(options[0]=="!join"):
-            lockout.join_user(message.author,options[1])
-            print(f"{options[1]} joined!")
+            response=lockout.join_user(message.author,options[1])
+            await message.channel.send(response)
+            # print(f"{options[1]} joined!")
         elif(options[0]=="!leaderboard"):
             await message.channel.send('\n'.join([f"{i[0]}\t{i[1]}" for i in lockout.get_leaderboard()]))
+        elif(options[0]=="!commands"):
+            commands="""create a lockout:\n!create <lockout name> <initial rating> <number of problems> <duration(in hrs)>\n\nstart the lockout:\n!start\n\njoin the lockout:\n!join <cf handle>\n\nget list of problems:\n!list\n\nget leaderboard\n!leaderboard\n\nget list of commands:\n!commands"""
+            await message.channel.send(commands)
 
 
 client.run(os.getenv("BOT_ID"))

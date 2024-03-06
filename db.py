@@ -2,6 +2,8 @@ import requests
 import json
 import random
 import time
+from bs4 import BeautifulSoup 
+import html5lib
 
 class Lockout:
     def __init__(self,name,initial_rating,no_of_problems,lockout_length):
@@ -57,11 +59,15 @@ class Lockout:
         has_ended=True
 
     def join_user(self,discord_user,cf_handle):
+        URL=f"https://codeforces.com/profile/{cf_handle}"
+        if(requests.get(URL).url!=URL):
+            return f"{cf_handle} not found"
         self.users.append({
             "name":discord_user,
             "cf_handle":cf_handle,
             "points":0
         })
+        return f"{cf_handle} joined!"
     
     def start_lockout(self):
         self.start_time=time.time()
@@ -90,14 +96,30 @@ class Lockout:
         return [i["cf_handle"] for i in self.users]
 
     def check_accepted_in_last_20(self,username,problems):
-        res=requests.get(f"https://codeforces.com/api/user.status?handle={username}&from=1&count=20")
-        res=json.loads(res.text)
+        # res=requests.get(f"https://codeforces.com/api/user.status?handle={username}&from=1&count=20")
+        # res=json.loads(res.text)
+        # solved={}
+        # for i in res['result']:
+        #     if(i['problem']['name'] in problems):
+        #         if(i['verdict']=="OK"):
+        #             solved[i['problem']['name']]=i["creationTimeSeconds"]
+        #             print(f"{username} solved {i['problem']['name']}")
+        URL = f"https://codeforces.com/submissions/{username}" 
+        r = requests.get(URL)
         solved={}
-        for i in res['result']:
-            if(i['problem']['name'] in problems):
-                if(i['verdict']=="OK"):
-                    solved[i['problem']['name']]=i["creationTimeSeconds"]
-                    print(f"{username} solved {i['problem']['name']}")
+        soup = BeautifulSoup(r.content, 'html5lib')
+        for i in soup.table.find_all('tr')[1:]:
+            cells=i.find_all('td')
+            verdict=cells[5].text.strip()
+            time_format="%b/%d/%Y %H:%M"
+            time_stamp=time.mktime(time.strptime(cells[1].text.strip(),time_format))
+            problem_name='-'.join(cells[3].a.text.strip().split('-')[1:]).strip()
+            if(verdict=="Accepted"):
+                # print(problem_name)
+                # print(time_stamp)
+                if(problem_name in problems):
+                    solved[problem_name]=time_stamp
+
         return solved
 
     def update(self):
@@ -126,5 +148,4 @@ class Lockout:
                             self.update_points(i,j["points"])
                 except:
                     pass
-            time.sleep(2)
         return is_solved
