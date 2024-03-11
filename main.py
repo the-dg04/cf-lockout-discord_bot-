@@ -1,10 +1,11 @@
 import discord
 import os
 from discord.ext import tasks
-from db import *
+from lockout_funcs import *
 import asyncio
 import time
 from dotenv import load_dotenv
+import events
 load_dotenv()
 
 intent=discord.Intents.default()
@@ -48,9 +49,9 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
+    # print(message.author)
     if message.author == client.user:
         return
-    print(message.content)
     if message.content.startswith('!'):
         global lockout
         options=message.content.split(' ')
@@ -59,21 +60,14 @@ async def on_message(message):
             client.loop.create_task(on_interval(client))
             await message.channel.send("lockout created")
         elif(options[0]=="!start"):
-            await message.channel.send('\n'.join([f"{i['name']}\t{i['points']}\t{i['url']}\t{i['solved_by']}" for i in lockout.start_lockout()]))
+            await events.handle_start(message,options,lockout)
         elif(options[0]=="!list"):
-            if(lockout.has_started):
-                await message.channel.send('\n'.join([f"{i['name']}\t{i['points']}\t{i['url']}\t{i['solved_by']}" for i in lockout.get_problems()]))
-            else:
-                await message.channel.send("lockout has not been started yet")
+            await events.handle_list(message,options,lockout)
         elif(options[0]=="!join"):
-            response=lockout.join_user(message.author,options[1])
-            await message.channel.send(response)
-            # print(f"{options[1]} joined!")
+            await events.handle_join(message,options,lockout)
         elif(options[0]=="!leaderboard"):
-            await message.channel.send('\n'.join([f"{i[0]}\t{i[1]}" for i in lockout.get_leaderboard()]))
+            await events.handle_leaderboard(message,options,lockout)
         elif(options[0]=="!commands"):
-            commands="""create a lockout:\n!create <lockout name> <initial rating> <number of problems> <duration(in hrs)>\n\nstart the lockout:\n!start\n\njoin the lockout:\n!join <cf handle>\n\nget list of problems:\n!list\n\nget leaderboard\n!leaderboard\n\nget list of commands:\n!commands"""
-            await message.channel.send(commands)
-
+            await events.handle_commands(message,options,lockout)
 
 client.run(os.getenv("BOT_ID"))
