@@ -15,5 +15,5 @@ async def handle_leaderboard(message,options,lockout):
     await message.channel.send('\n'.join([f"{i[0]}\t{i[1]}" for i in lockout.get_leaderboard()]))
 
 async def handle_commands(message,options,lockout):
-    commands="""create a lockout:\n!create <lockout name> <initial rating> <number of problems> <duration(in hrs)>\n\nstart the lockout:\n!start\n\njoin the lockout:\n!join <cf handle>\n\nget list of problems:\n!list\n\nget leaderboard\n!leaderboard\n\nget list of commands:\n!commands"""
+    commands="""create a lockout:\n!create <initial rating> <number of problems> <duration(in hrs)>\n\nstart the lockout:\n!start\n\njoin the lockout:\n!join <cf handle>\n\nget list of problems:\n!list\n\nget leaderboard\n!leaderboard\n\nget list of commands:\n!commands"""
     await message.channel.send(commands)

@@ -96,14 +96,6 @@ class Lockout:
         return [i["cf_handle"] for i in self.users]
 
     def check_accepted_in_last_20(self,username,problems):
-        # res=requests.get(f"https://codeforces.com/api/user.status?handle={username}&from=1&count=20")
-        # res=json.loads(res.text)
-        # solved={}
-        # for i in res['result']:
-        #     if(i['problem']['name'] in problems):
-        #         if(i['verdict']=="OK"):
-        #             solved[i['problem']['name']]=i["creationTimeSeconds"]
-        #             print(f"{username} solved {i['problem']['name']}")
         URL = f"https://codeforces.com/submissions/{username}" 
         r = requests.get(URL)
         solved={}
@@ -115,8 +107,6 @@ class Lockout:
             time_stamp=time.mktime(time.strptime(cells[1].text.strip(),time_format))
             problem_name='-'.join(cells[3].a.text.strip().split('-')[1:]).strip()
             if(verdict=="Accepted"):
-                # print(problem_name)
-                # print(time_stamp)
                 if(problem_name in problems):
                     solved[problem_name]=time_stamp
 
